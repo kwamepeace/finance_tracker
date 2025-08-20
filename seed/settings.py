@@ -39,6 +39,7 @@ INSTALLED_APPS = [
     'django.contrib.staticfiles',
     'auth_user', 
     'rest_framework',
+    'django_filters',
 ]
 
 MIDDLEWARE = [
@@ -76,8 +77,12 @@ WSGI_APPLICATION = 'seed.wsgi.application'
 
 DATABASES = {
     'default': {
-        'ENGINE': 'django.db.backends.sqlite3',
-        'NAME': BASE_DIR / 'db.sqlite3',
+        'ENGINE': 'django.db.backends.postgresql',
+        'NAME': 'finance_tracker',
+        'USER': 'kwame peace',
+        'PASSWORD': 'Roselineofori1.', 
+        'HOST': 'localhost',
+        'PORT': '5432',  
     }
 }
 
