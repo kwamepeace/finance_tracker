@@ -1,13 +1,8 @@
 from django.contrib import admin
-
-from django.contrib import admin
 from django.contrib.auth.admin import UserAdmin
 from django.contrib.auth.models import Group
 from .forms import UserCreationForm, CustomUserChangeForm
-from .models import CustomUser
-
-
-# Register your models here.
+from .models import CustomUser, Portfolio, Stock
 
 
 class CustomUserAdmin(UserAdmin):
@@ -44,10 +39,29 @@ class CustomUserAdmin(UserAdmin):
     ordering = ['email',]   
     filter_horizontal = []
 
-# Register the CustomUser model with the custom admin
+# Registering the CustomUser model with the custom admin
 admin.site.register(CustomUser, CustomUserAdmin)
 
-# Unregister the default Group model to avoid conflicts
-# Optional, but if you don't need the Group model, you can unregister it
-#
+
+class PortfolioAdmin(admin.ModelAdmin):
+    """
+    Admin interface for the Portfolios model.
+    """
+    list_display = ('user', 'name')
+    search_fields = ('name',)
+    list_filter = ('user',)
+admin.site.register(Portfolio, PortfolioAdmin)
+
+
+class StockAdmin(admin.ModelAdmin):
+    """
+    Admin interface for the Stocks model.
+    """
+    list_display = ('name', 'symbol')
+    search_fields = ('symbol',)
+    list_filter = ('symbol',)
+admin.site.register(Stock, StockAdmin)
+
+
+
 
