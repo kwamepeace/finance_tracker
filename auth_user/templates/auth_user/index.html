@@ -1,0 +1,417 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Django API Tester</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap');
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: #f3f4f6;
+        }
+        .container {
+            max-width: 900px;
+            margin: 2rem auto;
+            padding: 2rem;
+            background-color: #ffffff;
+            border-radius: 1rem;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+        }
+        .section-title {
+            font-size: 1.5rem;
+            font-weight: 600;
+            color: #1f2937;
+            margin-bottom: 1.5rem;
+            border-bottom: 2px solid #e5e7eb;
+            padding-bottom: 0.5rem;
+        }
+        .form-group {
+            margin-bottom: 1rem;
+        }
+        .form-group label {
+            display: block;
+            margin-bottom: 0.5rem;
+            font-weight: 500;
+            color: #4b5563;
+        }
+        .form-group input, .form-group select {
+            width: 100%;
+            padding: 0.75rem;
+            border: 1px solid #d1d5db;
+            border-radius: 0.5rem;
+            font-size: 1rem;
+        }
+        .btn {
+            padding: 0.75rem 1.5rem;
+            border-radius: 0.5rem;
+            color: #ffffff;
+            font-weight: 600;
+            cursor: pointer;
+            transition: background-color 0.2s;
+        }
+        .btn-primary {
+            background-color: #4f46e5;
+        }
+        .btn-primary:hover {
+            background-color: #4338ca;
+        }
+        .btn-secondary {
+            background-color: #6b7280;
+        }
+        .btn-secondary:hover {
+            background-color: #4b5563;
+        }
+        .message-box {
+            padding: 1rem;
+            border-radius: 0.5rem;
+            margin-top: 1rem;
+            text-align: center;
+            font-weight: 500;
+        }
+        .message-success {
+            background-color: #d1fae5;
+            color: #065f46;
+        }
+        .message-error {
+            background-color: #fee2e2;
+            color: #991b1b;
+        }
+        .portfolio-table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 1.5rem;
+        }
+        .portfolio-table th, .portfolio-table td {
+            padding: 0.75rem;
+            text-align: left;
+            border-bottom: 1px solid #e5e7eb;
+        }
+        .portfolio-table th {
+            background-color: #f9fafb;
+            color: #374151;
+            font-weight: 600;
+        }
+    </style>
+</head>
+<body class="bg-gray-100">
+
+<div class="container">
+    <h1 class="text-3xl font-bold text-center text-gray-800 mb-8">Django Stock Portfolio Tester</h1>
+
+    <!-- Authentication Section -->
+    <div id="auth-section" class="mb-8">
+        <h2 class="section-title">User Authentication</h2>
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <!-- Register Form -->
+            <div class="bg-gray-50 p-6 rounded-lg shadow-sm">
+                <h3 class="font-semibold text-lg mb-4">Register</h3>
+                <form id="register-form">
+                    <div class="form-group">
+                        <label for="reg-username">Username:</label>
+                        <input type="text" id="reg-username" name="username" required>
+                    </div>
+                    <div class="form-group">
+                        <label for="reg-email">Email:</label>
+                        <input type="email" id="reg-email" name="email" required>
+                    </div>
+                    <div class="form-group">
+                        <label for="reg-password">Password:</label>
+                        <input type="password" id="reg-password" name="password1" required>
+                    </div>
+                    <div class="form-group">
+                        <label for="reg-confirm-password">Confirm Password:</label>
+                        <input type="password" id="reg-confirm-password" name="password2" required>
+                    </div>
+                     <div class="form-group">
+                        <label for="reg-date-of-birth">Date of Birth:</label>
+                        <input type="date" id="reg-date-of-birth" name="date_of_birth">
+                    </div>
+                    <div class="form-group">
+                        <label for="reg-profile-photo">Profile Photo URL:</label>
+                        <input type="url" id="reg-profile-photo" name="profile_photo" placeholder="Optional URL">
+                    </div>
+                    <button type="submit" class="btn btn-primary w-full">Register</button>
+                </form>
+                <div id="register-message" class="message-box hidden"></div>
+            </div>
+
+            <!-- Login Form -->
+            <div class="bg-gray-50 p-6 rounded-lg shadow-sm">
+                <h3 class="font-semibold text-lg mb-4">Login</h3>
+                <form id="login-form">
+                    <div class="form-group">
+                        <label for="login-email">Email:</label>
+                        <input type="email" id="login-email" name="email" required>
+                    </div>
+                    <div class="form-group">
+                        <label for="login-password">Password:</label>
+                        <input type="password" id="login-password" name="password" required>
+                    </div>
+                    <button type="submit" class="btn btn-primary w-full">Login</button>
+                </form>
+                <div id="login-message" class="message-box hidden"></div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Portfolio Section (hidden by default) -->
+    <div id="portfolio-section" class="hidden">
+        <div class="flex justify-between items-center mb-4">
+            <h2 class="section-title">My Portfolio</h2>
+            <button id="logout-btn" class="btn btn-secondary"><i class="fas fa-sign-out-alt mr-2"></i>Logout</button>
+        </div>
+
+        <div id="portfolio-summary" class="bg-blue-50 p-4 rounded-lg shadow-sm mb-4">
+            <h3 class="font-semibold text-lg text-blue-800">Total Portfolio Value: <span id="total-value" class="font-bold text-xl">$0.00</span></h3>
+        </div>
+
+        <!-- Add Stock Form -->
+        <div class="bg-gray-50 p-6 rounded-lg shadow-sm mb-6">
+            <h3 class="font-semibold text-lg mb-4">Add New Stock</h3>
+            <form id="add-stock-form" class="grid grid-cols-1 md:grid-cols-4 gap-4 items-end">
+                <div class="form-group col-span-1 md:col-span-1">
+                    <label for="stock-symbol">Stock Symbol:</label>
+                    <input type="text" id="stock-symbol" name="stock_symbol" placeholder="e.g., AAPL" required>
+                </div>
+                <div class="form-group col-span-1 md:col-span-1">
+                    <label for="stock-quantity">Quantity:</label>
+                    <input type="number" id="stock-quantity" name="quantity" min="1" required>
+                </div>
+                <div class="form-group col-span-1 md:col-span-1">
+                    <label for="stock-price">Purchase Price:</label>
+                    <input type="number" id="stock-price" name="purchase_price" step="0.01" min="0" required>
+                </div>
+                <button type="submit" class="btn btn-primary col-span-1 md:col-span-1">Add Stock</button>
+            </form>
+            <div id="add-stock-message" class="message-box hidden"></div>
+        </div>
+
+        <!-- Holdings Table -->
+        <div>
+            <h3 class="font-semibold text-lg mb-2">Current Holdings</h3>
+            <table id="holdings-table" class="portfolio-table">
+                <thead>
+                    <tr>
+                        <th>Symbol</th>
+                        <th>Quantity</th>
+                        <th>Purchase Price</th>
+                        <th>Purchase Date</th>
+                        <th>Total Value</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <!-- Stock holdings will be dynamically inserted here -->
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+
+<script>
+    document.addEventListener('DOMContentLoaded', () => {
+        // API Endpoints
+        const API_BASE_URL = 'http://localhost:8000/api/';
+        // Corrected URL endpoints to match the Django router configuration
+        const REGISTER_URL = `${API_BASE_URL}auth/register/`;
+        const LOGIN_URL = `${API_BASE_URL}auth/login/`;
+        const PORTFOLIO_URL = `${API_BASE_URL}portfolio/my-portfolio/`;
+        const HOLDINGS_URL = `${API_BASE_URL}portfolio/stocks/`;
+
+        // DOM Elements
+        const authSection = document.getElementById('auth-section');
+        const portfolioSection = document.getElementById('portfolio-section');
+        const registerForm = document.getElementById('register-form');
+        const loginForm = document.getElementById('login-form');
+        const addStockForm = document.getElementById('add-stock-form');
+        const logoutBtn = document.getElementById('logout-btn');
+        const registerMessage = document.getElementById('register-message');
+        const loginMessage = document.getElementById('login-message');
+        const addStockMessage = document.getElementById('add-stock-message');
+        const totalValueSpan = document.getElementById('total-value');
+        const holdingsTableBody = document.querySelector('#holdings-table tbody');
+
+        // Functions to show/hide sections and messages
+        const showSection = (section) => section.classList.remove('hidden');
+        const hideSection = (section) => section.classList.add('hidden');
+        const showMessage = (element, message, isSuccess) => {
+            element.textContent = message;
+            element.classList.remove('hidden', 'message-success', 'message-error');
+            element.classList.add(isSuccess ? 'message-success' : 'message-error');
+        };
+        const formatErrors = (errors) => {
+            if (typeof errors === 'string') {
+                return errors;
+            }
+            if (typeof errors === 'object' && errors !== null) {
+                return Object.entries(errors)
+                    .map(([key, value]) => `${key}: ${Array.isArray(value) ? value.join(', ') : value}`)
+                    .join('\n');
+            }
+            return 'An unknown error occurred.';
+        };
+
+
+        const setLoggedInState = (isLoggedIn) => {
+            if (isLoggedIn) {
+                hideSection(authSection);
+                showSection(portfolioSection);
+            } else {
+                showSection(authSection);
+                hideSection(portfolioSection);
+            }
+        };
+
+        // Handle User Registration
+        registerForm.addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const formData = new FormData(registerForm);
+            const data = Object.fromEntries(formData.entries());
+            try {
+                const response = await fetch(REGISTER_URL, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(data),
+                });
+                const result = await response.json();
+                if (response.ok) {
+                    showMessage(registerMessage, 'Registration successful! You can now log in.', true);
+                    registerForm.reset();
+                } else {
+                    showMessage(registerMessage, formatErrors(result), false);
+                }
+            } catch (error) {
+                showMessage(registerMessage, 'An error occurred. Please try again.', false);
+            }
+        });
+
+        // Handle User Login
+        loginForm.addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const formData = new FormData(loginForm);
+            const data = Object.fromEntries(formData.entries());
+            try {
+                const response = await fetch(LOGIN_URL, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(data),
+                });
+                const result = await response.json();
+                if (response.ok) {
+                    localStorage.setItem('authToken', result.token);
+                    showMessage(loginMessage, 'Login successful!', true);
+                    setLoggedInState(true);
+                    fetchPortfolio();
+                } else {
+                    showMessage(loginMessage, result.error || JSON.stringify(result), false);
+                }
+            } catch (error) {
+                showMessage(loginMessage, 'An error occurred. Please try again.', false);
+            }
+        });
+
+        // Handle User Logout
+        logoutBtn.addEventListener('click', () => {
+            localStorage.removeItem('authToken');
+            setLoggedInState(false);
+            holdingsTableBody.innerHTML = ''; // Clear table
+            totalValueSpan.textContent = '$0.00'; // Reset total value
+        });
+
+        // Fetch User's Portfolio
+        const fetchPortfolio = async () => {
+            const token = localStorage.getItem('authToken');
+            if (!token) return;
+
+            try {
+                const response = await fetch(PORTFOLIO_URL, {
+                    method: 'GET',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': `Token ${token}`
+                    },
+                });
+                const portfolio = await response.json();
+                if (response.ok) {
+                    renderPortfolio(portfolio);
+                } else {
+                    showMessage(loginMessage, 'Failed to fetch portfolio: ' + JSON.stringify(portfolio), false);
+                    localStorage.removeItem('authToken');
+                    setLoggedInState(false);
+                }
+            } catch (error) {
+                showMessage(loginMessage, 'An error occurred while fetching portfolio.', false);
+                localStorage.removeItem('authToken');
+                setLoggedInState(false);
+            }
+        };
+
+        // Render Portfolio Data
+        const renderPortfolio = (portfolio) => {
+            totalValueSpan.textContent = `$${portfolio.total_portfolio_value ? portfolio.total_portfolio_value.toFixed(2) : '0.00'}`;
+            holdingsTableBody.innerHTML = '';
+            // Checking if `portfolio.stocks` exists and has data before iterating
+            if (portfolio.stocks && portfolio.stocks.length > 0) {
+                portfolio.stocks.forEach(holding => {
+                    const row = document.createElement('tr');
+                    // Removed current_price and current_value as the backend doesn't provide them
+                    row.innerHTML = `
+                        <td>${holding.symbol}</td>
+                        <td>${holding.quantity}</td>
+                        <td>$${holding.purchase_price}</td>
+                        <td>${holding.purchase_date}</td>
+                        <td>$${holding.total_amount.toFixed(2)}</td>
+                    `;
+                    holdingsTableBody.appendChild(row);
+                });
+            } else {
+                holdingsTableBody.innerHTML = '<tr><td colspan="5" class="text-center text-gray-500">No stocks in portfolio. Add one below!</td></tr>';
+            }
+        };
+
+        // Handle Adding a Stock
+        addStockForm.addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const token = localStorage.getItem('authToken');
+            if (!token) {
+                showMessage(addStockMessage, 'You must be logged in to add a stock.', false);
+                return;
+            }
+
+            const formData = new FormData(addStockForm);
+            const data = Object.fromEntries(formData.entries());
+
+            try {
+                const response = await fetch(HOLDINGS_URL, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': `Token ${token}`
+                    },
+                    body: JSON.stringify(data),
+                });
+                const result = await response.json();
+                if (response.ok) {
+                    showMessage(addStockMessage, 'Stock added successfully!', true);
+                    addStockForm.reset();
+                    fetchPortfolio(); // Refresh the portfolio view
+                } else {
+                    showMessage(addStockMessage, formatErrors(result), false);
+                }
+            } catch (error) {
+                showMessage(addStockMessage, 'An error occurred. Please try again.', false);
+            }
+        });
+
+        // Initial check for a token on page load
+        if (localStorage.getItem('authToken')) {
+            setLoggedInState(true);
+            fetchPortfolio();
+        }
+    });
+</script>
+
+</body>
+</html>
