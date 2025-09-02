@@ -1,2 +1,6 @@
 .env/
 ddff
+services.py
+forms.py
+templates/
+__pycache__/
