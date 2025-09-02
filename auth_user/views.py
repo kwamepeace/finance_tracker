@@ -9,7 +9,9 @@ from django.contrib.auth import authenticate
 from django.db import IntegrityError
 from .models import CustomUser, Portfolio, Holdings, Stock
 from .serializers import PortfolioSerializer, HoldingsSerializer, LoginSerializer
+from .serializers import PortfolioSerializer, HoldingsSerializer, LoginSerializer
 from .forms import UserCreationForm
+from django.shortcuts import render
 from django.shortcuts import render
 
 class UserAuthViewSet(viewsets.GenericViewSet):
@@ -32,13 +34,20 @@ class UserAuthViewSet(viewsets.GenericViewSet):
         user = serializer.validated_data['user']
         token, created = Token.objects.get_or_create(user=user)
         return Response({'token': token.key, 'user_id': user.id}, status=status.HTTP_200_OK)
+        serializer = LoginSerializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+        user = serializer.validated_data['user']
+        token, created = Token.objects.get_or_create(user=user)
+        return Response({'token': token.key, 'user_id': user.id}, status=status.HTTP_200_OK)
 
 
 class PortfolioViewSet(viewsets.ModelViewSet):
     serializer_class = PortfolioSerializer
     permission_classes = [IsAuthenticated]
 
+
     def get_queryset(self):
+        # Ensure a user can only see their own portfolio
         # Ensure a user can only see their own portfolio
         return Portfolio.objects.filter(user=self.request.user)
 
@@ -48,7 +57,17 @@ class PortfolioViewSet(viewsets.ModelViewSet):
         serializer = self.get_serializer(portfolio)
         return Response(serializer.data)
 
+
+    def list(self, request, *args, **kwargs):
+        # A user can only have one portfolio, so list should show only that one.
+        portfolio = get_object_or_404(Portfolio, user=request.user)
+        serializer = self.get_serializer(portfolio)
+        return Response(serializer.data)
+
     def create(self, request, *args, **kwargs):
+        # A user can only have one portfolio
+        if Portfolio.objects.filter(user=self.request.user).exists():
+            return Response({"error": "You can only have one portfolio."}, status=status.HTTP_400_BAD_REQUEST)
         # A user can only have one portfolio
         if Portfolio.objects.filter(user=self.request.user).exists():
             return Response({"error": "You can only have one portfolio."}, status=status.HTTP_400_BAD_REQUEST)
