@@ -1,12 +1,22 @@
 from django_filters import filters
-from .models import Stocks, Portfolios
+from .models import Stock, Holdings
 
 
 class StocksFilter(filters.FilterSet):
     class Meta:
-        model = Stocks
+        model = Stock
         fields = {
             'name': ['exact', 'icontains'],
-            'author__name': ['exact', 'icontains'],
-            'published_date': ['exact', 'year__gt', 'year__lt'],
+            'symbol': ['exact', 'icontains'],
+        }
+
+    
+class HoldingsFilter(filters.FilterSet):
+    class Meta:
+        model = Holdings
+        fields = {
+            'portfolio__name': ['exact', 'icontains'],
+            'quantity': ['exact', 'gte', 'lte'],
+            'purchase_price': ['exact', 'gte', 'lte'],
+            'purchase_date': ['exact', 'gte', 'lte'],
         }

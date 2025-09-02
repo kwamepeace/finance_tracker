@@ -8,9 +8,9 @@ from rest_framework.authtoken.models import Token
 from django.contrib.auth import authenticate
 from django.db import IntegrityError
 from .models import CustomUser, Portfolio, Holdings, Stock
-from .serializers import PortfolioSerializer, HoldingsSerializer
+from .serializers import PortfolioSerializer, HoldingsSerializer, LoginSerializer
 from .forms import UserCreationForm
-
+from django.shortcuts import render
 
 class UserAuthViewSet(viewsets.GenericViewSet):
     permission_classes = [AllowAny]
@@ -27,33 +27,31 @@ class UserAuthViewSet(viewsets.GenericViewSet):
 
     @action(detail=False, methods=['post'])
     def login(self, request):
-        email = request.data.get('email')
-        password = request.data.get('password')
-        user = authenticate(request, email=email, password=password)
-
-        if user:
-            token, created = Token.objects.get_or_create(user=user)
-            return Response({'token': token.key, 'user_id': user.id}, status=status.HTTP_200_OK)
-        return Response({'error': 'Invalid Credentials'}, status=status.HTTP_401_UNAUTHORIZED)
+        serializer = LoginSerializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+        user = serializer.validated_data['user']
+        token, created = Token.objects.get_or_create(user=user)
+        return Response({'token': token.key, 'user_id': user.id}, status=status.HTTP_200_OK)
 
 
 class PortfolioViewSet(viewsets.ModelViewSet):
     serializer_class = PortfolioSerializer
     permission_classes = [IsAuthenticated]
-    
+
     def get_queryset(self):
-        """
-        This view should return a single portfolio for the currently authenticated user.
-        """
+        # Ensure a user can only see their own portfolio
         return Portfolio.objects.filter(user=self.request.user)
-    
+
+    def list(self, request, *args, **kwargs):
+        # A user can only have one portfolio, so list should show only that one.
+        portfolio = get_object_or_404(Portfolio, user=request.user)
+        serializer = self.get_serializer(portfolio)
+        return Response(serializer.data)
+
     def create(self, request, *args, **kwargs):
-        """
-        Creates a new portfolio for the authenticated user.
-        A user can only have one portfolio.
-        """
-        if Portfolio.objects.filter(user=request.user).exists():
-            return Response({'error': 'You can only have one portfolio.'}, status=status.HTTP_400_BAD_REQUEST)
+        # A user can only have one portfolio
+        if Portfolio.objects.filter(user=self.request.user).exists():
+            return Response({"error": "You can only have one portfolio."}, status=status.HTTP_400_BAD_REQUEST)
 
         serializer = self.get_serializer(data=request.data)
         serializer.is_valid(raise_exception=True)
@@ -93,3 +91,4 @@ class HoldingsViewSet(viewsets.ModelViewSet):
             serializer.save(portfolio=user_portfolio, stock=stock)
         except IntegrityError:
             raise serializers.ValidationError({"error": "This stock already exists in your portfolio."})
+

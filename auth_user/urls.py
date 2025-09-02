@@ -1,7 +1,7 @@
 
 from django.urls import path, include
 from rest_framework.routers import DefaultRouter
-from .views import UserAuthViewSet, PortfolioViewSet, HoldingsViewSet
+from .views import UserAuthViewSet, PortfolioViewSet, HoldingsViewSet, home
 
 # Create a router to automatically handle URL patterns for viewsets.
 router = DefaultRouter()
@@ -11,6 +11,7 @@ router.register(r'holdings', HoldingsViewSet, basename='holdings')
 urlpatterns = [
     path('register/', UserAuthViewSet.as_view({'post': 'register'}), name='register'),
     path('login/', UserAuthViewSet.as_view({'post': 'login'}), name='login'),
+    path("home/", home, name = 'home'),
     
     # Includes the default router URLs
     path('api/', include(router.urls)),
