@@ -131,7 +131,7 @@ Uniqueness: It enforces a unique combination of portfolio and stock to prevent d
 ## 4. External API Usage
 The project utilizes the Polygon.io API to fetch live stock prices. The get_live_stock_price function in services.py is responsible for this, contradicting the previous claim that no external APIs were used.
 
-## 5. Django Admin
+## 5. Django Admin --removed now
 The Django admin interface is customized to improve management of user and portfolio data. The CustomUserAdmin class adds the custom fields (date_of_birth and profile_photo) to the user management forms.
 
 ## 6. Key Dependencies
