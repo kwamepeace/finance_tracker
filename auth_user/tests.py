@@ -30,8 +30,8 @@ class ViewsTestCase(APITestCase):
             date_of_birth='1990-01-01'
         )
 
-        # Get the token for authentication
-        self.token = Token.objects.get(user=self.user)
+        # Get or create the token for authentication
+        self.token, created = Token.objects.get_or_create(user=self.user)
         self.client.credentials(HTTP_AUTHORIZATION='Token ' + self.token.key)
 
         # Create a test portfolio for the user
@@ -51,7 +51,7 @@ class ViewsTestCase(APITestCase):
         """
         Test that a new user can be registered successfully.
         """
-        url = reverse('auth-register')
+        url = reverse('register')
         data = {
             "email": "newuser@example.com",
             "username": "newuser",
@@ -69,7 +69,7 @@ class ViewsTestCase(APITestCase):
         """
         Test that an existing user can log in successfully.
         """
-        url = reverse('auth-login')
+        url = reverse('login')
         data = {
             "email": self.user_email,
             "password": self.user_password
@@ -83,14 +83,15 @@ class ViewsTestCase(APITestCase):
         """
         Test that login fails with invalid credentials.
         """
-        url = reverse('auth-login')
+        url = reverse('login')
         data = {
             "email": self.user_email,
             "password": "wrongpassword"
         }
         response = self.client.post(url, data, format='json')
-        self.assertEqual(response.status_code, status.HTTP_401_UNAUTHORIZED)
-        self.assertIn('error', response.data)
+        # The serializer returns a 400 Bad Request for validation errors
+        self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
+        self.assertIn('non_field_errors', response.data)
 
     def test_create_portfolio_success(self):
         """
@@ -102,7 +103,7 @@ class ViewsTestCase(APITestCase):
             username="anotheruser",
             password="password123"
         )
-        new_token = Token.objects.get(user=new_user)
+        new_token, created = Token.objects.get_or_create(user=new_user)
         self.client.credentials(HTTP_AUTHORIZATION='Token ' + new_token.key)
 
         url = reverse('portfolio-list')
@@ -121,7 +122,8 @@ class ViewsTestCase(APITestCase):
         self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
         self.assertIn('error', response.data)
 
-    @patch('auth_user.services.get_live_stock_price', return_value=160.00)
+    # Patch the function where it is USED (in the serializers file)
+    @patch('auth_user.serializers.get_live_stock_price', return_value=160.00)
     def test_get_my_portfolio_success(self, mock_get_live_stock_price):
         """
         Test that the user can retrieve their portfolio and live prices are calculated.
@@ -144,14 +146,15 @@ class ViewsTestCase(APITestCase):
         self.assertEqual(stock_data['current_price'], 160.00)
         self.assertEqual(stock_data['current_value'], 1600.00)
         self.assertEqual(data['total_portfolio_value'], 1600.00)
-
-    def test_add_stock_to_portfolio_success(self):
+    
+    @patch('auth_user.services.get_live_stock_price', return_value=2100.00)
+    def test_add_stock_to_portfolio_success(self, mock_get_live_stock_price):
         """
         Test that a user can add a new stock to their portfolio.
         """
         url = reverse('holdings-list')
         data = {
-            "stock_symbol": "GOOG",
+            "symbol": "GOOG",
             "quantity": 5,
             "purchase_price": 2000.00
         }
@@ -166,12 +169,13 @@ class ViewsTestCase(APITestCase):
         """
         url = reverse('holdings-list')
         data = {
-            "stock_symbol": self.stock_symbol,  # AAPL already exists
+            "symbol": self.stock_symbol,  # AAPL already exists
             "quantity": 5,
             "purchase_price": 200.00
         }
         response = self.client.post(url, data, format='json')
         self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
+        self.assertIn('error', response.data)
 
     def test_delete_holding_success(self):
         """
@@ -184,4 +188,3 @@ class ViewsTestCase(APITestCase):
         response = self.client.delete(url)
         self.assertEqual(response.status_code, status.HTTP_204_NO_CONTENT)
         self.assertFalse(Holdings.objects.filter(id=holding_id).exists())
-

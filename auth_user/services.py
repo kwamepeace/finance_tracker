@@ -5,7 +5,7 @@ def get_live_stock_price(symbol):
     """
     Fetches the live price for a given stock symbol using the Polygon.io API.
     """
-    api_key = 'lDsVOlmP4xIv4adyCEE7du8aSt41_ORg'
+    api_key = 'yLVfz6alk_RT2eIgdIpFCZ7jWV81DAg4'
     
     # Use the Polygon.io snapshot endpoint for the latest trade information.
     # The symbol is converted to uppercase to match API requirements.
