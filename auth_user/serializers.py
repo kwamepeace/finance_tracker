@@ -1,8 +1,31 @@
 from rest_framework import serializers
 from rest_framework.authtoken.models import Token
 from django.contrib.auth import authenticate
-from .models import Portfolio, Stock, Holdings
-from .services import get_live_stock_price
+from .models import Portfolio, Stock, Holdings, CustomUser
+
+
+class UserSerializer(serializers.ModelSerializer):
+    """
+    Serializer for handling user registration and creation.
+    """
+    password = serializers.CharField(write_only=True, required=True, style={'input_type': 'password'})
+    
+    class Meta:
+        model = CustomUser
+        fields = ['username', 'email', 'password', 'date_of_birth', 'profile_photo']
+    
+    def create(self, validated_data):
+        """
+        Creates and saves a new user with the validated data, securely hashing the password.
+        """
+        user = CustomUser.objects.create_user(
+            username=validated_data['username'],
+            email=validated_data['email'],
+            password=validated_data['password'],
+            date_of_birth=validated_data.get('date_of_birth'),
+            profile_photo=validated_data.get('profile_photo')
+        )
+        return user
 
 
 class LoginSerializer(serializers.Serializer):
@@ -13,9 +36,7 @@ class LoginSerializer(serializers.Serializer):
     def validate(self, data):
         user = authenticate(email=data.get('email'), password=data.get('password'))
         if user:
-            # Check if the user is active
             if user.is_active:
-                # Store the user object in validated_data
                 data['user'] = user
                 return data
             else:
@@ -24,34 +45,17 @@ class LoginSerializer(serializers.Serializer):
             raise serializers.ValidationError("Invalid credentials.")
 
 
-"""
-HoldingsSerializer: Serializes the Holdings model, including fields for id, symbol, quantity, purchase_price, purchase_date, and total_amount.
-It also includes a method to calculate the total amount (quantity * purchase_price) and validation to ensure quantity and purchase_price are positive.
-"""
 class HoldingsSerializer(serializers.ModelSerializer):
     symbol = serializers.CharField(source='stock.symbol', read_only=True)
     total_amount = serializers.SerializerMethodField()
-    current_price = serializers.SerializerMethodField()
-    current_value = serializers.SerializerMethodField()
 
     class Meta:
         model = Holdings
-        fields = ['id', 'symbol', 'quantity', 'purchase_price', 'purchase_date', 'total_amount', 'current_price', 'current_value']
+        fields = ['id', 'symbol', 'quantity', 'purchase_price', 'purchase_date', 'total_amount']
         read_only_fields = ['purchase_date']
 
     def get_total_amount(self, obj):
         return obj.quantity * obj.purchase_price
-    
-    def get_current_price(self, obj):
-        # Fetch the live price for the stock
-        return get_live_stock_price(obj.stock.symbol)
-
-    def get_current_value(self, obj):
-        # Calculate the current value based on the live price
-        live_price = self.get_current_price(obj)
-        if live_price is not None:
-            return obj.quantity * live_price
-        return None
     
     def validate(self, data):
         if data['quantity'] <= 0:
@@ -63,17 +67,8 @@ class HoldingsSerializer(serializers.ModelSerializer):
 
 class PortfolioSerializer(serializers.ModelSerializer):
     stocks = HoldingsSerializer(source='holdings_set', many=True, read_only=True)
-    total_portfolio_value = serializers.SerializerMethodField()
 
     class Meta:
         model = Portfolio
-        fields = ['id', 'name', 'user', 'stocks', 'total_portfolio_value']
+        fields = ['id', 'name', 'user', 'stocks']
         read_only_fields = ['user']
-
-    def get_total_portfolio_value(self, obj):
-        # Gracefully handle cases where the API call returns None
-        total_value = sum(
-            holding.quantity * price if (price := get_live_stock_price(holding.stock.symbol)) is not None else 0
-            for holding in obj.holdings_set.all()
-        )
-        return total_value

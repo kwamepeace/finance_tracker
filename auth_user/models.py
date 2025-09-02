@@ -101,8 +101,6 @@ class Holdings(models.Model):
         # Ensures that each portfolio-stock combination is unique
         unique_together = ('portfolio', 'stock')
 
-    def __str__(self):
-        return f"{self.quantity} of {self.stock.symbol} in {self.portfolio.name}"
 
 class Portfolio(models.Model):
     class Meta:
@@ -115,5 +113,3 @@ class Portfolio(models.Model):
     user = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE, related_name='portfolios')
     stocks = models.ManyToManyField(Stock, through='Holdings', related_name='portfolios_stocks')
     
-    def __str__(self):
-        return f"{self.name} by {self.user.username}"
