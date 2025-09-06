@@ -6,18 +6,30 @@ from .models import Portfolio, Stock, Holdings, CustomUser
 
 class UserSerializer(serializers.ModelSerializer):
     """
-    Serializer for handling user registration and creation.
+    Serializer for handling user registration and creation and 
+    includes an additional password2 field to confirm password.
     """
     password = serializers.CharField(write_only=True, required=True, style={'input_type': 'password'})
+    password2 = serializers.CharField(write_only=True, required=True, style={'input_type': 'password'})
     
     class Meta:
         model = CustomUser
-        fields = ['username', 'email', 'password', 'date_of_birth', 'profile_photo']
+        fields = ['username', 'email', 'password', 'password2', 'date_of_birth', 'profile_photo']
     
+    def validate(self, data):
+        """
+        Custom validation to ensure both password fields match.
+        """
+        if data['password'] != data['password2']:
+            raise serializers.ValidationError({"password": "Passwords do not match."})
+        return data
+
     def create(self, validated_data):
         """
         Creates and saves a new user with the validated data, securely hashing the password.
         """
+        # Exclude password2 from the validated_data before creating the user
+        validated_data.pop('password2')
         user = CustomUser.objects.create_user(
             username=validated_data['username'],
             email=validated_data['email'],
@@ -26,6 +38,7 @@ class UserSerializer(serializers.ModelSerializer):
             profile_photo=validated_data.get('profile_photo')
         )
         return user
+
 
 
 class LoginSerializer(serializers.Serializer):
@@ -42,7 +55,7 @@ class LoginSerializer(serializers.Serializer):
             else:
                 raise serializers.ValidationError("User account is inactive.")
         else:
-            raise serializers.ValidationError("Invalid credentials.")
+            raise serializers.ValidationError("Invalid password or email.")
 
 
 class HoldingsSerializer(serializers.ModelSerializer):

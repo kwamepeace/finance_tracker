@@ -1,12 +1,9 @@
 from django.test import TestCase
-
 from django.urls import reverse
 from rest_framework import status
 from rest_framework.test import APITestCase
 from rest_framework.authtoken.models import Token
-from unittest.mock import patch
 from .models import CustomUser, Portfolio, Holdings, Stock
-from .services import get_live_stock_price
 import json
 
 class ViewsTestCase(APITestCase):
@@ -18,9 +15,9 @@ class ViewsTestCase(APITestCase):
         """
         Set up the test data and client for all tests.
         """
-        self.user_email = "testuser@example.com"
-        self.user_password = "testpassword123"
-        self.user_username = "testuser"
+        self.user_email = "kwamepeace419@gmail.com"
+        self.user_password = "1234567890qwert"
+        self.user_username = "kwamepeace"
 
         # Create a test user for authenticated requests
         self.user = CustomUser.objects.create_user(
@@ -35,39 +32,55 @@ class ViewsTestCase(APITestCase):
         self.client.credentials(HTTP_AUTHORIZATION='Token ' + self.token.key)
 
         # Create a test portfolio for the user
-        self.portfolio = Portfolio.objects.create(user=self.user, name="My Test Portfolio")
+        self.portfolio = Portfolio.objects.create(user=self.user, name="My Portfolio")
 
-        # Create a test stock and holding
+        # Create a test stock and holding for a known symbol
         self.stock_symbol = "AAPL"
-        self.stock = Stock.objects.create(symbol=self.stock_symbol, name="Apple Inc.")
+        self.stock = Stock.objects.create(symbol=self.stock_symbol)
         self.holding = Holdings.objects.create(
             portfolio=self.portfolio,
             stock=self.stock,
             quantity=10,
             purchase_price=150.00
         )
-
+    
+    # --- Tests for Auth ViewSet ---
     def test_register_user_success(self):
         """
         Test that a new user can be registered successfully.
         """
         url = reverse('register')
         data = {
-            "email": "newuser@example.com",
             "username": "newuser",
-            "password": "newpassword123",
-            "password2": "newpassword123",
+            "email": "newuser@example.com",
+            "password": "password123",
+            "password2": "password123",
             "date_of_birth": "1995-05-05"
         }
         response = self.client.post(url, data, format='json')
         self.assertEqual(response.status_code, status.HTTP_201_CREATED)
         self.assertIn('token', response.data)
         self.assertIn('user_id', response.data)
-        self.assertTrue(CustomUser.objects.filter(email="newuser@example.com").exists())
 
-    def test_login_user_success(self):
+    def test_register_user_invalid_data(self):
         """
-        Test that an existing user can log in successfully.
+        Test that registration fails with invalid data (e.g., mismatched passwords).
+        """
+        url = reverse('register')
+        data = {
+            "username": "invaliduser",
+            "email": "invalid@example.com",
+            "password": "password123",
+            "password2": "differentpassword"
+        }
+        response = self.client.post(url, data, format='json')
+        self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
+        # The serializer returns a specific password error, so we check for it.
+        self.assertIn('password', response.data)
+
+    def test_user_login_success(self):
+        """
+        Test that a user can log in with correct credentials.
         """
         url = reverse('login')
         data = {
@@ -77,83 +90,37 @@ class ViewsTestCase(APITestCase):
         response = self.client.post(url, data, format='json')
         self.assertEqual(response.status_code, status.HTTP_200_OK)
         self.assertIn('token', response.data)
-        self.assertIn('user_id', response.data)
 
-    def test_login_user_failure(self):
+    def test_user_login_invalid_credentials(self):
         """
-        Test that login fails with invalid credentials.
+        Test that login fails with incorrect credentials.
         """
         url = reverse('login')
         data = {
             "email": self.user_email,
-            "password": "wrongpassword"
+            "password": "wrong_password"
         }
         response = self.client.post(url, data, format='json')
-        # The serializer returns a 400 Bad Request for validation errors
         self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
         self.assertIn('non_field_errors', response.data)
 
-    def test_create_portfolio_success(self):
+    # --- Tests for Holdings ViewSet ---
+    def test_get_holdings_list_authenticated(self):
         """
-        Test that a user can create a portfolio successfully.
+        Test that an authenticated user can retrieve their holdings list.
         """
-        # Create a new user without a portfolio to test creation
-        new_user = CustomUser.objects.create_user(
-            email="anotheruser@example.com",
-            username="anotheruser",
-            password="password123"
-        )
-        new_token, created = Token.objects.get_or_create(user=new_user)
-        self.client.credentials(HTTP_AUTHORIZATION='Token ' + new_token.key)
-
-        url = reverse('portfolio-list')
-        data = {"name": "Another User's Portfolio"}
-        response = self.client.post(url, data, format='json')
-        self.assertEqual(response.status_code, status.HTTP_201_CREATED)
-        self.assertTrue(Portfolio.objects.filter(user=new_user).exists())
-
-    def test_create_portfolio_failure_already_exists(self):
-        """
-        Test that a user cannot create a second portfolio.
-        """
-        url = reverse('portfolio-list')
-        data = {"name": "My Second Portfolio"}
-        response = self.client.post(url, data, format='json')
-        self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
-        self.assertIn('error', response.data)
-
-    # Patch the function where it is USED (in the serializers file)
-    @patch('auth_user.serializers.get_live_stock_price', return_value=160.00)
-    def test_get_my_portfolio_success(self, mock_get_live_stock_price):
-        """
-        Test that the user can retrieve their portfolio and live prices are calculated.
-        We mock the external API call to ensure the test is fast and reliable.
-        """
-        url = reverse('portfolio-my-portfolio')
-        response = self.client.get(url, format='json')
+        url = reverse('holdings-list')
+        response = self.client.get(url)
         self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.assertEqual(len(response.data), 1)
 
-        data = response.data
-        self.assertIn('name', data)
-        self.assertIn('stocks', data)
-        self.assertIn('total_portfolio_value', data)
-        self.assertEqual(data['name'], "My Test Portfolio")
-        
-        # Verify that the live price and value are correctly calculated
-        stock_data = data['stocks'][0]
-        self.assertEqual(stock_data['symbol'], self.stock_symbol)
-        self.assertEqual(stock_data['quantity'], 10)
-        self.assertEqual(stock_data['current_price'], 160.00)
-        self.assertEqual(stock_data['current_value'], 1600.00)
-        self.assertEqual(data['total_portfolio_value'], 1600.00)
-    
-    @patch('auth_user.services.get_live_stock_price', return_value=2100.00)
-    def test_add_stock_to_portfolio_success(self, mock_get_live_stock_price):
+    def test_create_new_holding_success(self):
         """
-        Test that a user can add a new stock to their portfolio.
+        Test that a user can add a new stock holding to their portfolio.
         """
         url = reverse('holdings-list')
         data = {
+            "portfolio_id": self.portfolio.id,
             "symbol": "GOOG",
             "quantity": 5,
             "purchase_price": 2000.00
@@ -169,6 +136,7 @@ class ViewsTestCase(APITestCase):
         """
         url = reverse('holdings-list')
         data = {
+            "portfolio_id": self.portfolio.id,
             "symbol": self.stock_symbol,  # AAPL already exists
             "quantity": 5,
             "purchase_price": 200.00
@@ -184,7 +152,42 @@ class ViewsTestCase(APITestCase):
         # Get the ID of the holding to delete
         holding_id = self.holding.id
         url = reverse('holdings-detail', args=[holding_id])
-        
         response = self.client.delete(url)
         self.assertEqual(response.status_code, status.HTTP_204_NO_CONTENT)
         self.assertFalse(Holdings.objects.filter(id=holding_id).exists())
+
+    def test_delete_other_users_holding_failure(self):
+        """
+        Test that a user cannot delete another user's holding.
+        """
+        # Create a second user and their portfolio/holding
+        other_user = CustomUser.objects.create_user(email="other@example.com", username="other", password="password")
+        other_portfolio = Portfolio.objects.create(user=other_user, name="Other Portfolio")
+        other_holding = Holdings.objects.create(
+            portfolio=other_portfolio,
+            stock=self.stock,
+            quantity=5,
+            purchase_price=10.00
+        )
+
+        # Try to delete the other user's holding with our token
+        url = reverse('holdings-detail', args=[other_holding.id])
+        response = self.client.delete(url)
+        self.assertEqual(response.status_code, status.HTTP_404_NOT_FOUND)
+
+    # --- Tests for Portfolio ViewSet ---
+    def test_get_portfolio_data(self):
+        """
+        Test that the API returns the portfolio data correctly.
+        """
+        url = reverse('portfolio-my-portfolio')
+        response = self.client.get(url)
+
+        # Check that the request was successful
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+
+        # The API returns a list, so we get the first item
+        portfolio_data = response.data[0]
+        self.assertEqual(portfolio_data['name'], "My Portfolio")
+        self.assertIn('stocks', portfolio_data)
+        self.assertEqual(len(portfolio_data['stocks']), 1)

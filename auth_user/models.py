@@ -93,7 +93,7 @@ class Holdings(models.Model):
         ]
     portfolio = models.ForeignKey('Portfolio', on_delete=models.CASCADE)
     stock = models.ForeignKey(Stock, on_delete=models.CASCADE)
-    quantity = models.IntegerField(default=0)
+    quantity = models.IntegerField(default=1)
     purchase_price = models.DecimalField(max_digits=10, decimal_places=4)
     purchase_date = models.DateField(auto_now_add=True)
     
