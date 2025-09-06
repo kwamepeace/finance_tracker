@@ -2,6 +2,7 @@
 from django.urls import path, include
 from rest_framework.routers import DefaultRouter
 from .views import UserAuthViewSet, PortfolioViewSet, HoldingsViewSet
+from 
 
 # Create a router to automatically handle URL patterns for viewsets.
 router = DefaultRouter()
@@ -13,5 +14,5 @@ urlpatterns = [
     path('auth/login/', UserAuthViewSet.as_view({'post': 'login'}), name='login'),
     
     # Includes the default router URLs
-    path('api/', include(router.urls)),
+    path('', include(router.urls)),
 ]
