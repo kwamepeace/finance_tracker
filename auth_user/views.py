@@ -21,7 +21,7 @@ class UserAuthViewSet(viewsets.GenericViewSet):
         serializer = UserSerializer(data=request.data)
         if serializer.is_valid():
             user = serializer.save()
-            #Token generated from signals.py logic
+            #Token generated using signals.py 
             token = Token.objects.get(user=user)
             return Response({'token': token.key, 'user_id': user.id}, status=status.HTTP_201_CREATED)
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
