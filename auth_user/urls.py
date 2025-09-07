@@ -9,8 +9,8 @@ router.register(r'portfolio', PortfolioViewSet, basename='portfolio')
 router.register(r'holdings', HoldingsViewSet, basename='holdings')
 
 urlpatterns = [
-    path('auth/register/', UserAuthViewSet.as_view({'post': 'register'}), name='register'),
-    path('auth/login/', UserAuthViewSet.as_view({'post': 'login'}), name='login'),
+    path('register/', UserAuthViewSet.as_view({'post': 'register'}), name='register'),
+    path('login/', UserAuthViewSet.as_view({'post': 'login'}), name='login'),
     
     # Includes the default router URLs
     path('', include(router.urls)),

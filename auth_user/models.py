@@ -84,6 +84,18 @@ class Stock(models.Model):
  This model tracks the quantity of each stock in a portfolio and the purchase price.
  
  '''
+class Portfolio(models.Model):
+    class Meta:
+        verbose_name = 'Portfolio'
+        permissions = [
+            ("can_view_portfolios", "Can view portfolios"),
+            ("can_manage_portfolios", "Can manage portfolios"),
+        ]
+    name = models.CharField(max_length=100)
+    user = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE, related_name='portfolios')
+    stocks = models.ManyToManyField(Stock, through='Holdings', related_name='portfolios_stocks')
+    
+
 class Holdings(models.Model):
     class Meta:
         verbose_name = 'Holding'
@@ -102,14 +114,3 @@ class Holdings(models.Model):
         unique_together = ('portfolio', 'stock')
 
 
-class Portfolio(models.Model):
-    class Meta:
-        verbose_name = 'Portfolio'
-        permissions = [
-            ("can_view_portfolios", "Can view portfolios"),
-            ("can_manage_portfolios", "Can manage portfolios"),
-        ]
-    name = models.CharField(max_length=100)
-    user = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE, related_name='portfolios')
-    stocks = models.ManyToManyField(Stock, through='Holdings', related_name='portfolios_stocks')
-    

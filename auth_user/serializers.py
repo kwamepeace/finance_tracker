@@ -59,23 +59,29 @@ class LoginSerializer(serializers.Serializer):
 
 
 class HoldingsSerializer(serializers.ModelSerializer):
-    symbol = serializers.CharField(source='stock.symbol', read_only=True)
+    portfolio_name = serializers.CharField(write_only=True)
+    symbol = serializers.CharField(write_only=True)
     total_amount = serializers.SerializerMethodField()
 
     class Meta:
         model = Holdings
-        fields = ['id', 'symbol', 'quantity', 'purchase_price', 'purchase_date', 'total_amount']
+        fields = ['id', 'portfolio_name', 'symbol', 'quantity', 'purchase_price', 'purchase_date', 'total_amount']
         read_only_fields = ['purchase_date']
-
+        
+    #Get the total amount for each holding
     def get_total_amount(self, obj):
         return obj.quantity * obj.purchase_price
     
+    # validation to ensure quantity and purchase_price are positive
     def validate(self, data):
-        if data['quantity'] <= 0:
-            raise serializers.ValidationError("Quantity must be a positive integer.")
-        if data['purchase_price'] <= 0:
-            raise serializers.ValidationError("Purchase price must be a positive number.")
+        if 'quantity' in data and data['quantity'] <= 0:
+            raise serializers.ValidationError({"quantity": "Quantity must be a positive integer."})
+        
+        if 'purchase_price' in data and data['purchase_price'] <= 0:
+            raise serializers.ValidationError({"purchase_price": "Purchase price must be a positive number."})
+            
         return data
+    
 
 
 class PortfolioSerializer(serializers.ModelSerializer):
