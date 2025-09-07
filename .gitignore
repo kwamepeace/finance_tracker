@@ -1,7 +1,4 @@
 .env/
 ddff
-services.py
-forms.py
-templates/
 __pycache__/
 db.sqlite3
